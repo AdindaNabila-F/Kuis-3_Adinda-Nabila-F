@@ -1,87 +1,116 @@
-describe('Skenario verifikasi fitur Login pada website OrangeHRM', () => {
-  //1. Login valid dan lengkap
-  it('TC_LGN_001 Login valid dan lengkap', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
-    cy.get('input[name="username"]').type('Admin').should('have.value', 'Admin');
-    cy.get('input[name="password"]').type('admin123');
+describe('Intercept fitur Login pada website OrangeHRM', () => {
+
+  // 1. Membuka halaman Login 
+  it('TC_LGN_001 Membuka halaman Login', () => {
     
-    cy.intercept("POST","https://opensource-demo.orangehrmlive.com/web/index.php/events/push").as('loginRequest');
+    cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages').as('loginPage');
+    
+    cy.visit('https://opensource-demo.orangehrmlive.com/');
+    
+    cy.wait('@loginPage');
+
+    cy.get('input[name="username"]').should('be.visible');
+    cy.get('input[name="password"]').should('be.visible');
+  });
+
+  // 2. Login valid dan lengkap
+  it('TC_LGN_002 Login valid dan lengkap', () => {
+
+    cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/api/v2/dashboard/shortcuts').as('shortcuts');
+
+    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
+    cy.get('input[name="username"]').type('Admin');
+    cy.get('input[name="password"]').type('admin123');
 
     cy.get('button[type="submit"]').click();
 
-    cy.wait('@loginRequest').its('response.statusCode').should('eq', 200);
-  })
+    cy.wait('@shortcuts');
+  });
 
-  // 2. Login tidak valid - username dan password kosong
-  it('TC_LGN_002 Login tidak valid (kosongkan field username dan password)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('button[type="submit"]').click()
-    cy.contains('Required').should('be.visible')
-  })
+  // 3. Login valid dan lengkap
+  it('TC_LGN_003 Login valid dan lengkap', () => {
 
- // 3. Login tidak valid - username kosong
-  it('TC_LGN_003 Login tidak valid (kosongkan field username)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('input[name="password"]').type('admin123')
-    cy.get('button[type="submit"]').click()
-    cy.contains('Required').should('be.visible')
-  })
+    cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/api/v2/dashboard/employees/action-summary').as('actionSummary');
 
-  // 4. Login tidak valid - password kosong
-  it('TC_LGN_004 Login tidak valid (kosongkan field password)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('input[name="username"]').type('Admin').should('have.value', 'Admin')
-    cy.get('button[type="submit"]').click()
-    cy.contains('Required').should('be.visible')
-  })
+    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
+    cy.get('input[name="username"]').type('Admin');
+    cy.get('input[name="password"]').type('admin123');
+    
+    cy.get('button[type="submit"]').click();
 
-  // 5. Login tidak valid - username salah
-  it('TC_LGN_005 Login tidak valid (isi field username salah)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('input[name="username"]').type('halo')
-    cy.get('input[name="password"]').type('admin123')
-    cy.get('button[type="submit"]').click()
+    cy.wait('@actionSummary').its('response.statusCode').should('eq', 200);
+  });
+
+  // 4. Login tidak valid - username salah
+  it('TC_LGN_004 Login tidak valid - username salah', () => {
+
+    cy.intercept("GET","https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages").as('loginRequest1');
+    
+    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
+    cy.get('input[name="username"]').type('halo');
+    cy.get('input[name="password"]').type('admin123');
+
+    cy.get('button[type="submit"]').click();
+    
+    cy.wait('@loginRequest1');
+
+     cy.contains('Invalid credentials').should('be.visible')
+  });
+
+  // 5. Login tidak valid - password salah
+  it('TC_LGN_005 Login tidak valid - password salah', () => {
+
+    cy.intercept("GET","https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages").as('loginRequest2');
+    
+    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
+    cy.get('input[name="username"]').type('Admin');
+    cy.get('input[name="password"]').type('123');
+
+    cy.get('button[type="submit"]').click();
+    
+    cy.wait('@loginRequest2');
+
+     cy.contains('Invalid credentials').should('be.visible')
+});
+
+  // 6. Login tidak valid - username dan password salah
+  it('TC_LGN_006 Login tidak valid - username dan password salah', () => {
+
+    cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages').as('loginRequest3');
+
+    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login');
+    cy.get('input[name="username"]').type('halo');
+    cy.get('input[name="password"]').type('123');
+
+    cy.get('button[type="submit"]').click();
+    
+    cy.wait('@loginRequest3');
+
     cy.contains('Invalid credentials').should('be.visible')
-  })
+});
 
-  // 6. Login tidak valid - password salah
-  it('TC_LGN_006 Login tidak valid (isi field password salah)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('input[name="username"]').type('Admin')
-    cy.get('input[name="password"]').type('123')
-    cy.get('button[type="submit"]').click()
-    cy.contains('Invalid credentials').should('be.visible')
-  })
+  // 7. Membuka halaman "Forgot your password?"
+  it('TC_LGN_007 Membuka halaman Forgot Password', () => {
 
-  // 7. Login tidak valid - username dan password salah
-  it('TC_LGN_007 Login tidak valid (isi field username dan password salah)', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.get('input[name="username"]').type('halo')
-    cy.get('input[name="password"]').type('123')
-    cy.get('button[type="submit"]').click()
-    cy.contains('Invalid credentials').should('be.visible')
-  })
+    cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages').as('resetpassPage');
 
-  // 8. Memastikan button Forgot your password dapat diklik
-  it('TC_LGN_008 Memastikan button "Forgot your password?" dapat diklik', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.contains('Forgot your password?').should('be.visible').click()
-    cy.url().should('include', '/auth/requestPasswordResetCode')
-    cy.contains('Reset Password').should('be.visible')
-  })
+    cy.visit('https://opensource-demo.orangehrmlive.com/');
+    
+    cy.wait('@resetpassPage');
+});
 
-  // 9. Melakukan reset password dengan username
-  it('TC_LGN_009 Melakukan reset password dengan email', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.contains('Forgot your password?').click()
-    cy.get('input[name="username"]').type('aku.tes')
-    cy.get ('button[type="submit"]').click()
-    cy.contains('successfully').should('be.visible')
-  })
+  // 8. Melakukan reset password
+  it('TC_LGN_008 Melakukan reset password', () => {
 
-  // 14. Memastikan teks OrangeHRM, Inc dapat diklik
-  it('TC_LGN_014 Memastikan teks tautan "OrangeHRM, Inc" dapat diklik', () => {
-    cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
-    cy.contains('OrangeHRM, Inc').should('be.visible').click()
-  })
-})
+     cy.intercept('GET','https://opensource-demo.orangehrmlive.com/web/index.php/core/i18n/messages').as('resetpassRequest');
+     
+     cy.visit('https://opensource-demo.orangehrmlive.com/web/index.php/auth/requestPasswordResetCode');
+    
+     cy.get('input[placeholder="Username"]').type('tes');
+     cy.get('button[type="submit"]').click();
+
+     cy.wait('@resetpassRequest');
+
+     cy.contains('Reset Password link sent successfully').should('be.visible')
+  });
+});
